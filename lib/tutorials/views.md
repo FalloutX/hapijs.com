@@ -1,5 +1,7 @@
 ## Views
 
+_This tutorial is compatible with hapi v11.x.x._
+
 hapi has extensive support for template rendering, including the ability to load and leverage multiple templating engines, partials, helpers (functions used in templates to manipulate data), and layouts.
 
 ## Configuring the server
@@ -7,22 +9,34 @@ hapi has extensive support for template rendering, including the ability to load
 To get started with views, first we have to configure at least one templating engine on the server. This is done by using the `server.views` method:
 
 ```javascript
-var Path = require('path');
-var Hapi = require('hapi');
+'use strict';
 
-var server = new Hapi.Server();
-server.views({
-    engines: {
-        html: require('handlebars')
-    },
-    path: Path.join(__dirname, 'templates')
+const Path = require('path');
+const Hapi = require('hapi');
+const Hoek = require('hoek');
+
+const server = new Hapi.Server();
+
+server.register(require('vision'), (err) => {
+
+    Hoek.assert(!err, err);
+
+    server.views({
+        engines: {
+            html: require('handlebars')
+        },
+        relativeTo: __dirname,
+        path: 'templates'
+    });
 });
 
 ```
 
 We're doing several things here.
 
-First, we register the `handlebars` module as the engine responsible for rendering templates with an extension of `.html`.
+First, we load the [`vision`](https://github.com/hapijs/vision) module as a plugin. It adds template rendering support to hapi. Since [`vision`](https://github.com/hapijs/vision) is no longer included with hapi, you may need to install it.
+
+Second, we register the `handlebars` module as the engine responsible for rendering templates with an extension of `.html`.
 
 Second, we tell the server that our templates are located in the `templates` directory within the current path. By default, hapi will look for templates in the current working directory. You can set the path parameter to wherever your templates are located.
 
@@ -77,7 +91,7 @@ Additionally, there are two settings that alter how hapi will allow you to use p
 For example, if you have a directory structure like:
 
 ```
-views\
+templates\
   index.html
   layout\
     layout.html
@@ -94,9 +108,9 @@ server.views({
         html: require('handlebars')
     },
     relativeTo: __dirname,
-    path: './views',
-    layoutPath: './views/layout',
-    helpersPath: './views/helpers'
+    path: './templates',
+    layoutPath: './templates/layout',
+    helpersPath: './templates/helpers'
 });
 ```
 
@@ -140,7 +154,7 @@ server.route({
 
 When using the view handler, context is passed in the key `context`, for example:
 
-```javascript
+```json5
 handler: {
     view: {
         template: 'index',
@@ -158,7 +172,7 @@ We've seen how to pass context directly to a view, but what if we have some defa
 The simplest way to achieve this is by using the `context` option when calling `server.views()`:
 
 ```javascript
-var defaultContext = {
+const defaultContext = {
     title: 'My personal site'
 };
 
@@ -183,21 +197,21 @@ For this example, we will create a view helper `fortune` which will pick and pri
 The following snippet is the complete helper function which we will store in a file called `fortune.js` in the `helpers` directory.
 
 ```javascript
-module.exports = function() {
-  var fortunes = [
-    "Heisenberg may have slept here...",
-    "Wanna buy a duck?",
-    "Say no, then negotiate.",
-    "Time and tide wait for no man.",
-    "To teach is to learn.",
-    "Never ask the barber if you need a haircut.",
-    "You will forget that you ever knew me.",
-    "You will be run over by a beer truck.",
-    "Fortune favors the lucky.",
-    "Have a nice day!"
-  ];
-  var x = Math.floor(Math.random() * fortunes.length);
-  return fortunes[x];
+module.exports = function () {
+    const fortunes = [
+        'Heisenberg may have slept here...',
+        'Wanna buy a duck?',
+        'Say no, then negotiate.',
+        'Time and tide wait for no man.',
+        'To teach is to learn.',
+        'Never ask the barber if you need a haircut.',
+        'You will forget that you ever knew me.',
+        'You will be run over by a beer truck.',
+        'Fortune favors the lucky.',
+        'Have a nice day!'
+    ];
+    const x = Math.floor(Math.random() * fortunes.length);
+    return fortunes[x];
 };
 ```
 
@@ -213,32 +227,87 @@ Now when we start the server and point our browser to the route which uses our t
 For reference, here is a complete server script that uses the fortune view helper method in a template.
 
 ```javascript
-var Hapi = require("hapi");
+'use strict';
 
-var server = new Hapi.Server();
+const Hapi = require('hapi');
+
+const server = new Hapi.Server();
 
 server.connection({
-  port: Number(process.argv[2] || 8080),
-  host: "localhost"
+    port: Number(process.argv[2] || 8080),
+    host: 'localhost'
 });
 
-server.views({
-  engines: {
-    html: require("handlebars")
-  },
-  relativeTo: __dirname,
-  path: "templates",
-  helpersPath: "helpers"
-});
+server.register(require('vision'), (err) => {
 
-server.route({
-  method: "GET",
-  path: "/",
-  handler: function(request, reply) {
-    reply.view("index");
-  }
+    Hoek.assert(!err, err);
+
+    server.views({
+        engines: {
+            html: require('handlebars')
+        },
+        relativeTo: __dirname,
+        path: 'templates',
+        helpersPath: 'helpers'
+    });
+
+    server.route({
+        method: 'GET',
+        path: '/',
+        handler: function (request, reply) {
+            reply.view('index');
+        }
+    });
 });
 
 server.start();
 ```
 
+### Layouts
+
+Hapi includes built-in support for view layouts. It comes disabled by default, because it may conflict with other layout systems that specific view engines may provide. We recommend choosing only one layout system.
+
+In order to use the built-in layout system, first setup the view engine:
+
+```javascript
+server.views({
+    // ...
+    layout: true,
+    layoutPath: Path.join(__dirname, 'templates/layout')
+});
+```
+
+This enables the built-in layouts and defines the default layout page to `templates/layout/layout.html` (or whatever other extension you're using).
+
+Setup a content area in your `layout.html`:
+
+```html
+<html>
+  <body>
+    {{{content}}}
+ </body>
+</html>
+```
+
+And your view should be just the content:
+
+```html
+<div>Content</div>
+```
+
+When rendering the view, the `{{{content}}}` will be replaced by the view contents.
+
+If you want a different default layout, you can set the option globally:
+
+```javascript
+server.views({
+    // ...
+    layout: 'another_default'
+});
+```
+
+You can also specify a different layout per view:
+
+```javascript
+    reply.view('myview', null, { layout: 'another_layout' });
+```

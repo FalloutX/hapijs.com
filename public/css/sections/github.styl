@@ -17,6 +17,8 @@
     padding-right: 20px
     left: -20px
 
+    outline: 0
+
     .octicon-link:before
       font-size: 60%
       content: '#'
@@ -24,13 +26,13 @@
 
 .contributing,
 .github-updates
-  
+
   h3
     margin-top: 0
-  
+
   header, .unstyled
     margin-bottom: 40px
-  
+
   header
     padding: 15px 0
     border-bottom: $ui-border
@@ -42,9 +44,9 @@
 .help-wanted-issues,
 .pull-request-list,
 .closed-issues-list
-  
+
   .unstyled
-    
+
     li
       display: block
       margin-bottom: 15px
@@ -90,34 +92,3 @@
 
   a
     color: $orange-dark
-
-.changelog
-  ul.task-list
-    margin: 0
-
-    li
-      width: 100%
-      list-style-type: none
-
-    li > a > strong
-      margin-right: 5px
-      display: inline-block
-
-    ul
-      margin-top: 8px
-      font-size: $font-small
-      color: $gray-light
-
-@media $smartphone
-
-  .changelog
-
-    li p, li a
-      display: block
-
-    li li
-      padding: 5px 0
-      line-height: 1.5
-
-      &:not(:last-of-type)
-        border-bottom: 1px solid $gray-lighter

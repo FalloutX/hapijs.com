@@ -1,5 +1,7 @@
 ## Cookies
 
+_This tutorial is compatible with hapi v11.x.x._
+
 When writing a web application, using cookies is often a necessity. When using hapi, cookies are flexible, safe, and simple.
 
 ## Configuring the server
@@ -23,7 +25,7 @@ This configuration will make it so the cookie named `data` has a session time-li
 
 In addition to this, you may pass two parameters to the `config` when adding a route:
 
-```javascript
+```json5
 {
     config: {
         state: {
@@ -51,4 +53,3 @@ When setting a cookie, you may also pass the same options available to `server.s
 ```javascript
 reply('Hello').state('data', 'test', { encoding: 'none' });
 ```
-

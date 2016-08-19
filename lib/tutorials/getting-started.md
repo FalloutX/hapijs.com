@@ -1,5 +1,7 @@
 ## Installing hapi
 
+_This tutorial is compatible with hapi v11.x.x._
+
 Create a new directory `myproject`, and from there:
 
 * Run: `npm init` and follow the prompts, this will generate a package.json file for you.
@@ -12,13 +14,19 @@ That's it! You now have everything you need in order to create a server using ha
 The most basic server looks like the following:
 
 ```javascript
-var Hapi = require('hapi');
+'use strict';
 
-var server = new Hapi.Server();
+const Hapi = require('hapi');
+
+const server = new Hapi.Server();
 server.connection({ port: 3000 });
 
-server.start(function () {
-    console.log('Server running at:', server.info.uri);
+server.start((err) => {
+
+    if (err) {
+        throw err;
+    }
+    console.log(`Server running at: ${server.info.uri}`);
 });
 ```
 
@@ -33,9 +41,11 @@ a Unix socket file, or Windows named pipe to bind the server to. For more detail
 Now that we have a server we should add one or two routes so that it actually does something. Let's see what that looks like:
 
 ```javascript
-var Hapi = require('hapi');
+'use strict';
 
-var server = new Hapi.Server();
+const Hapi = require('hapi');
+
+const server = new Hapi.Server();
 server.connection({ port: 3000 });
 
 server.route({
@@ -54,8 +64,12 @@ server.route({
     }
 });
 
-server.start(function () {
-    console.log('Server running at:', server.info.uri);
+server.start((err) => {
+
+    if (err) {
+        throw err;
+    }
+    console.log(`Server running at: ${server.info.uri}`);
 });
 ```
 
@@ -65,24 +79,66 @@ Note that we URI encode the name parameter, this is to prevent content injection
 
 The `method` parameter can be any valid HTTP method, array of HTTP methods, or an asterisk to allow any method. The `path` parameter defines the path including parameters. It can contain optional parameters, numbered parameters, and even wildcards. For more details, see [the routing tutorial](/tutorials/routing).
 
+## Creating static pages and content
+
+We've proven that we can start a simple Hapi app with our Hello World application. Next, we'll use a plugin called **inert** to serve a static page. Before you begin, stop the server with **CTRL + C**.
+
+To install inert run this command at the command line: `npm install --save inert` This will download inert and add it to your `package.json`, which documents which packages are installed.
+
+Add the following to your `server.js` file:
+
+``` javascript
+server.register(require('inert'), (err) => {
+
+    if (err) {
+        throw err;
+    }
+
+    server.route({
+        method: 'GET',
+        path: '/hello',
+        handler: function (request, reply) {
+            reply.file('./public/hello.html');
+        }
+    });
+});
+
+
+```
+
+The `server.register()` command above adds the inert plugin to your Hapi application. If something goes wrong, we want to know, so we've passed in an anonymous function which if invoked will receive `err` and throw that error. This callback function is required when registering plugins.
+
+The `server.route`() command registers the `/hello` route, which tells your server to accept GET requests to `/hello` and reply with the contents of the `hello.html` file. We've put the routing callback function inside of registering inert because we need to insure that inert is registered _before_ we use it to render the static page. It is generally wise to run code that depends on a plugin within the callback that registers that plugin so that you can be absolutely sure that plugin exists when your code runs.
+
+Start up your server with `npm start` and go to `http://localhost:3000/hello` in your browser. Oh no! We're getting a 404 error because we never created a `hello.html` file. You need to create the missing file to get rid of this error.
+
+Create a folder called `public` at the root of your directory with a file called `hello.html` within it. Inside `hello.html` put the following HTML: `<h2>Hello World.</h2>`. Then reload the page in your browser. You should see a header reading "Hello World."
+
+Inert will serve whatever content is saved to your hard drive when the request is made, which is what leads to this live reloading behavior. Customize the page at `/hello` to your liking.
+
+More details on how static content is served are detailed on [Serving Static Content](/tutorials/serving-files). This technique is commonly used to serve images, stylesheets, and static pages in your web application.
+
 ## Using plugins
 
-A common desire when creating any web application, is an access log. To add some basic logging to our application, let's load the [good](https://github.com/hapijs/good) plugin and its [good-console](https://github.com/hapijs/good-console) reporter on to our server.
+A common desire when creating any web application, is an access log. To add some basic logging to our application, let's load the [good](https://github.com/hapijs/good) plugin and its [good-console](https://github.com/hapijs/good-console) reporter on to our server. We'll also need a basic filtering mechanism. Let's use [good-squeeze](https://github.com/hapijs/good-squeeze) because it has the basic event type and tag filtering we need to get started.
 
-The plugin first needs to be installed:
+Let's install the modules from npm to get started:
 
 ```bash
 npm install --save good
 npm install --save good-console
+npm install --save good-squeeze
 ```
 
 Then update your `server.js`:
 
 ```javascript
-var Hapi = require('hapi');
-var Good = require('good');
+'use strict';
 
-var server = new Hapi.Server();
+const Hapi = require('hapi');
+const Good = require('good');
+
+const server = new Hapi.Server();
 server.connection({ port: 3000 });
 
 server.route({
@@ -104,20 +160,30 @@ server.route({
 server.register({
     register: Good,
     options: {
-        reporters: [{
-            reporter: require('good-console'),
-            events: {
-                response: '*',
-                log: '*'
-            }
-        }]
+        reporters: {
+            console: [{
+                module: 'good-squeeze',
+                name: 'Squeeze',
+                args: [{
+                    response: '*',
+                    log: '*'
+                }]
+            }, {
+                module: 'good-console'
+            }, 'stdout']
+        }
     }
-}, function (err) {
+}, (err) => {
+
     if (err) {
         throw err; // something bad happened loading the plugin
     }
 
-    server.start(function () {
+    server.start((err) => {
+
+        if (err) {
+            throw err;
+        }
         server.log('info', 'Server running at: ' + server.info.uri);
     });
 });

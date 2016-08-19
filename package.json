@@ -4,36 +4,47 @@
   "description": "hapijs.com",
   "main": "server.js",
   "dependencies": {
-    "async": "0.9.x",
-    "boom": "2.x.x",
-    "catbox-memory": "^1.1.1",
-    "catbox-redis": "^1.0.4",
-    "getconfig": "1.x.x",
-    "good": "^5.0.0",
-    "good-console": "^3.0.1",
-    "hapi": "8.x.x",
-    "hoek": "2.x.x",
+    "async": "1.5.x",
+    "boom": "3.x.x",
+    "catbox-memory": "2.x.x",
+    "catbox-redis": "1.x.x",
+    "getconfig": "3.x.x",
+    "good": "7.x.x",
+    "good-console": "6.x.x",
+    "hapi": "13.x.x",
+    "hoek": "4.x.x",
+    "inert": "3.x.x",
     "jade": "1.x.x",
-    "wreck": "5.x.x"
+    "semver": "5.x.x",
+    "vision": "4.x.x",
+    "wreck": "7.x.x"
   },
   "scripts": {
     "build": "make",
-    "start": "node server.js"
+    "start": "node server.js",
+    "lint:code": "eslint -c eslint-config-hapi .",
+    "lint:tutorials": "eslint --ext .md lib/tutorials",
+    "test": "npm run lint:code && npm run lint:tutorials"
   },
   "repository": {
     "type": "git",
     "url": "git://github.com/hapijs/hapijs.com.git"
   },
   "author": "&yet <team@andyet.net>",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/hapijs/hapijs.com/issues"
   },
   "homepage": "https://github.com/hapijs/hapijs.com",
   "devDependencies": {
-    "building-static-server": "git+https://github.com/nlf/building-static-server#hapi8",
-    "glob-cli": "^1.0.0",
-    "stylus": "^0.49.3",
-    "uglify-js": "^2.4.15"
+    "building-static-server": "3.x.x",
+    "eslint": "2.12.x",
+    "eslint-config-hapi": "9.x.x",
+    "eslint-plugin-hapi": "4.x.x",
+    "eslint-plugin-markdown": ">=1.0.0-beta.1 <2.0.0",
+    "glob-cli": "1.x.x",
+    "lab": "10.x.x",
+    "stylus": "0.54.x",
+    "uglify-js": "2.x.x"
   }
 }

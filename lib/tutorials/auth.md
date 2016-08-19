@@ -1,5 +1,7 @@
 ## Authentication
 
+_This tutorial is compatible with hapi v11.x.x._
+
 Authentication within hapi is based on the concept of `schemes` and `strategies`.
 
 Think of a scheme as a general type of auth, like "basic" or "digest". A strategy on the other hand, is a pre-configured and named instance of a scheme.
@@ -7,14 +9,16 @@ Think of a scheme as a general type of auth, like "basic" or "digest". A strateg
 First, let's look at an example of how to use [hapi-auth-basic](https://github.com/hapijs/hapi-auth-basic):
 
 ```javascript
-var Bcrypt = require('bcrypt');
-var Hapi = require('hapi');
-var Basic = require('hapi-auth-basic');
+'use strict';
 
-var server = new Hapi.Server();
+const Bcrypt = require('bcrypt');
+const Hapi = require('hapi');
+const Basic = require('hapi-auth-basic');
+
+const server = new Hapi.Server();
 server.connection({ port: 3000 });
 
-var users = {
+const users = {
     john: {
         username: 'john',
         password: '$2a$10$iqJSHD.BGr0E2IxQwYgJmeP3NvhPrXAeLSaGCj6IR/XU5QtjVu5Tm',   // 'secret'
@@ -23,18 +27,23 @@ var users = {
     }
 };
 
-var validate = function (request, username, password, callback) {
-    var user = users[username];
+const validate = function (request, username, password, callback) {
+    const user = users[username];
     if (!user) {
         return callback(null, false);
     }
 
-    Bcrypt.compare(password, user.password, function (err, isValid) {
+    Bcrypt.compare(password, user.password, (err, isValid) => {
         callback(err, isValid, { id: user.id, name: user.name });
     });
 };
 
-server.register(Basic, function (err) {
+server.register(Basic, (err) => {
+
+    if (err) {
+        throw err;
+    }
+
     server.auth.strategy('simple', 'basic', { validateFunc: validate });
     server.route({
         method: 'GET',
@@ -47,7 +56,12 @@ server.register(Basic, function (err) {
         }
     });
 
-    server.start(function () {
+    server.start((err) => {
+
+        if (err) {
+            throw err;
+        }
+
         console.log('server running at: ' + server.info.uri);
     });
 });
@@ -103,7 +117,7 @@ This method is intended to decorate the response object (`request.response`) wit
 
 Once any decoration is complete, you must call `reply.continue()`, and the response will be sent.
 
-If an error occurs, you should instead call `reply(error)` where error is recommended to be a [boom](https://github.com/hapijs/boom).
+If an error occurs, you should instead call `reply(error)` where `error` is recommended to be a [boom](https://github.com/hapijs/boom).
 
 ### Registration
 
@@ -156,4 +170,3 @@ When specifying one strategy, you may set the `strategy` property to a string wi
 Lastly, the `payload` parameter can be set to `false` denoting the payload is not to be authenticated, `'required'` or `true` meaning that it *must* be authenticated, or `'optional'` meaning that if the client includes payload authentication information, the authentication must be valid.
 
 The `payload` parameter is only possible to use with a strategy that supports the `payload` method in its scheme.
-

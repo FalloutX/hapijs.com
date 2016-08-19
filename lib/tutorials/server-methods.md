@@ -3,7 +3,7 @@
 Server methods are a useful way of sharing functions by attaching them to your server object rather than requiring a common module everywhere it is needed. To register a server method, you need access to the `server` object. Two different forms are available, either passing separate parameters:
 
 ```javascript
-var add = function (x, y, next) {
+const add = function (x, y, next) {
     // note that the 'next' callback must be used to return values
     next(null, x + y);
 };
@@ -14,7 +14,7 @@ server.method('add', add, {});
 Or an object with `name`, `method`, and `options` parameters (note that you may also pass an array of these objects):
 
 ```javascript
-var add = function (x, y, next) {
+const add = function (x, y, next) {
     next(null, x + y);
 };
 
@@ -47,19 +47,21 @@ Speaking of caching, another major advantage of server methods is that they may 
 server.method('add', add, {
     cache: {
         expiresIn: 60000,
-        expiresAt: '30:22',
+        expiresAt: '20:30',
         staleIn: 30000,
-        staleTimeout: 10000
+        staleTimeout: 10000,
+        generateTimeout: 100
     }
 });
 ```
 
 The parameters mean:
 
-* `expiresIn`: milliseconds since the item was created to keep in cache
-* `expiresAt`: MM:HH notation for a specific time to invalidate the cache, this cannot be used at the same time as expiresIn
-* `staleIn`: milliseconds to wait before a cached item is marked stale, this must be *less* than expiresIn
-* `staleTimeout`: milliseconds to wait for a response before serving a stale value
+* `expiresIn`: relative expiration expressed in the number of milliseconds since the item was saved in the cache. Cannot be used together with `expiresAt`.
+* `expiresAt`: time of day expressed in 24h notation using the 'HH:MM' format, at which point all cache records for the route expire. Uses local time. Cannot be used together with `expiresIn`.
+* `staleIn`: number of milliseconds to mark an item stored in cache as stale and attempt to regenerate it. Must be less than `expiresIn`.
+* `staleTimeout`: number of milliseconds to wait before returning a stale value while generateFunc is generating a fresh value.
+* `generateTimeout`: number of milliseconds to wait before returning a timeout error when it takes too long to return a value. When the value is eventually returned, it is stored in the cache for future requests.
 * `segment`: an optional segment name used to isolate cache items.
 * `cache`: an optional string with the name of the cache connection configured on your server to use
 
@@ -70,14 +72,14 @@ More information on the caching options can be found in the [API Reference](/api
 In addition to the above options, you may also pass a custom function used to generate a key based on the parameters passed to your method. If your method only accepts some combination of string, number, and boolean values hapi will generate a sane key for you. However, if your method accepts an object parameter, you should specify a function that will generate a key similar to the following:
 
 ```javascript
-var sum = function (array, next) {
-    var sum = 0;
+const sum = function (array, next) {
+    let total = 0;
 
-    array.forEach(function (item) {
-        sum += item;
+    array.forEach((item) => {
+        total += item;
     });
 
-    next(null, sum);
+    next(null, total);
 };
 
 server.method('sum', sum, {
@@ -94,13 +96,12 @@ Any arguments that are passed to your method are available to the generateKey me
 The last option available to server methods is `bind`. The `bind` option changes the `this` context within the method. It defaults to the current active context when the method is added. This can be useful for passing in a database client without needing to pass it as a parameter and requiring a custom `generateKey` function, as in:
 
 ```javascript
-var lookup = function (id, next) {
+const lookup = function (id, next) {
     // calls myDB.getOne
-    this.getOne({ id: id }, function (err, value) {
+    this.getOne({ id: id }, (err, value) => {
         next(err, value);
     });
 };
 
 server.method('lookup', lookup, { bind: myDB });
 ```
-
